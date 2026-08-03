@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ public sealed class SabnzbdOpenApiHttpClient : ISabnzbdOpenApiHttpClient
     private readonly IHttpClientCache _httpClientCache;
     private readonly IConfiguration _config;
 
-    private const string _prodBaseUrl = "https://api.close.com/api/v1";
+    private const string _defaultBaseUrl = "http://localhost:8080";
 
     public SabnzbdOpenApiHttpClient(IHttpClientCache httpClientCache, IConfiguration config)
     {
@@ -27,20 +26,11 @@ public sealed class SabnzbdOpenApiHttpClient : ISabnzbdOpenApiHttpClient
 
     public ValueTask<HttpClient> Get(CancellationToken cancellationToken = default)
     {
-        return _httpClientCache.Get(nameof(SabnzbdOpenApiHttpClient), (config: _config, baseUrl: _config["Sabnzbd:ClientBaseUrl"] ?? _prodBaseUrl), static state =>
+        return _httpClientCache.Get(nameof(SabnzbdOpenApiHttpClient), _config.GetString("Sabnzbd:ClientBaseUrl") ?? _defaultBaseUrl, static baseUrl =>
         {
-            var apiKey = state.config.GetValueStrict<string>("Close:ApiKey");
-            string authHeaderName = state.config["Sabnzbd:AuthHeaderName"] ?? "Authorization";
-            string authHeaderValueTemplate = state.config["Sabnzbd:AuthHeaderValueTemplate"] ?? "Bearer {token}";
-            string authHeaderValue = authHeaderValueTemplate.Replace("{token}", apiKey, StringComparison.Ordinal);
-
             return new HttpClientOptions
             {
-                BaseAddress = new Uri(state.baseUrl),
-                DefaultRequestHeaders = new Dictionary<string, string>
-                {
-                    {authHeaderName, authHeaderValue},
-                }
+                BaseAddress = new Uri(baseUrl, UriKind.Absolute)
             };
         }, cancellationToken);
     }

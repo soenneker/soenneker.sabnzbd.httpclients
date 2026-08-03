@@ -1,3 +1,6 @@
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Soenneker.Sabnzbd.HttpClients.Abstract;
 using Soenneker.Tests.HostedUnit;
 
@@ -14,8 +17,11 @@ public sealed class SabnzbdOpenApiHttpClientTests : HostedUnitTest
     }
 
     [Test]
-    public void Default()
+    public async Task Get_uses_configured_sabnzbd_base_url()
     {
+        HttpClient client = await _httpclient.Get();
 
+        await Assert.That(client.BaseAddress).IsEqualTo(new Uri("http://localhost:18080"));
+        await Assert.That(client.DefaultRequestHeaders.Authorization).IsNull();
     }
 }

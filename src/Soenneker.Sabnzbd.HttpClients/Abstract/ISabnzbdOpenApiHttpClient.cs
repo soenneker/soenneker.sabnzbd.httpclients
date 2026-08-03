@@ -6,9 +6,9 @@ using System.Threading;
 namespace Soenneker.Sabnzbd.HttpClients.Abstract;
 
 /// <summary>
-/// A .NET thread-safe singleton HttpClient for 
+/// A thread-safe cached <see cref="HttpClient"/> configured for a SABnzbd instance.
 /// </summary>
-public interface ISabnzbdOpenApiHttpClient: IDisposable, IAsyncDisposable
+public interface ISabnzbdOpenApiHttpClient : IDisposable, IAsyncDisposable
 {
     ValueTask<HttpClient> Get(CancellationToken cancellationToken = default);
 }

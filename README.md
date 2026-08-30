@@ -1,42 +1,62 @@
 [![](https://img.shields.io/nuget/v/soenneker.sabnzbd.httpclients.svg?style=for-the-badge)](https://www.nuget.org/packages/soenneker.sabnzbd.httpclients/)
 [![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.sabnzbd.httpclients/publish-package.yml?style=for-the-badge)](https://github.com/soenneker/soenneker.sabnzbd.httpclients/actions/workflows/publish-package.yml)
 [![](https://img.shields.io/nuget/dt/soenneker.sabnzbd.httpclients.svg?style=for-the-badge)](https://www.nuget.org/packages/soenneker.sabnzbd.httpclients/)
+[![](https://img.shields.io/github/actions/workflow/status/soenneker/soenneker.sabnzbd.httpclients/codeql.yml?label=CodeQL&style=for-the-badge)](https://github.com/soenneker/soenneker.sabnzbd.httpclients/actions/workflows/codeql.yml)
 
 # Soenneker.Sabnzbd.HttpClients
 
-A thread-safe cached `HttpClient` configured for a SABnzbd instance.
+A cached `HttpClient` provider configured with a SABnzbd server's base URL.
 
-## Install
+## Installation
 
 ```bash
 dotnet add package Soenneker.Sabnzbd.HttpClients
 ```
 
-## Quick start
+## Configuration
+
+```json
+{
+  "Sabnzbd": {
+    "ClientBaseUrl": "http://localhost:8080"
+  }
+}
+```
+
+`Sabnzbd:ClientBaseUrl` must be an absolute URI. When omitted, the client uses `http://localhost:8080`.
+
+## Registration
 
 ```csharp
 using Soenneker.Sabnzbd.HttpClients.Registrars;
-using Microsoft.Extensions.DependencyInjection;
 
-var services = new ServiceCollection();
-var result = services.AddSabnzbdOpenApiHttpClientAsSingleton();
+services.AddSabnzbdOpenApiHttpClientAsSingleton();
 ```
 
-Adds `SabnzbdOpenApiHttpClient` as a singleton service.
+Scoped registration is also available when the consuming service is scoped:
 
-## What you get
+```csharp
+services.AddSabnzbdOpenApiHttpClientAsScoped();
+```
 
-- `ISabnzbdOpenApiHttpClient` — A thread-safe cached `HttpClient` configured for a SABnzbd instance.
-- `SabnzbdOpenApiHttpClientRegistrar` — Registers the OpenAPI HttpClient wrapper for dependency injection.
+Both registrations keep the underlying cached `HttpClient` singleton. Disposing a scoped provider releases only that wrapper; it does not remove the shared transport.
 
-## API at a glance
+## Usage
 
-| API | What it does | Result / important behavior |
-| --- | --- | --- |
-| `SabnzbdOpenApiHttpClientRegistrar.AddSabnzbdOpenApiHttpClientAsSingleton(services)` | Adds `SabnzbdOpenApiHttpClient` as a singleton service. | The same service collection, so additional registrations can be chained. |
-| `SabnzbdOpenApiHttpClientRegistrar.AddSabnzbdOpenApiHttpClientAsScoped(services)` | Adds `SabnzbdOpenApiHttpClient` as a scoped service. | The same service collection, so additional registrations can be chained. |
+```csharp
+using Soenneker.Sabnzbd.HttpClients.Abstract;
 
-## Practical notes
+public sealed class SabnzbdStatusClient(ISabnzbdOpenApiHttpClient clientProvider)
+{
+    public async Task<string> GetVersion(CancellationToken cancellationToken)
+    {
+        HttpClient client = await clientProvider.Get(cancellationToken);
 
-- Reuse the registered client instead of constructing one per operation.
-- Dispose instances you own when their scope ends so held resources can be released.
+        return await client.GetStringAsync(
+            "/api?mode=version&output=json&apikey=YOUR_API_KEY",
+            cancellationToken);
+    }
+}
+```
+
+The provider configures only `HttpClient.BaseAddress`; it does not attach an API key or other authentication. Add the SABnzbd API key through the generated client or request parameters appropriate to your application. Repeated calls to `Get` return the cached client rather than creating a transport per request.

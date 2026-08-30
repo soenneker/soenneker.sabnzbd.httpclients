@@ -10,18 +10,23 @@ using Soenneker.Utils.HttpClientCache.Abstract;
 
 namespace Soenneker.Sabnzbd.HttpClients;
 
-/// <inheritdoc cref="ISabnzbdOpenApiHttpClient"/>
 public sealed class SabnzbdOpenApiHttpClient : ISabnzbdOpenApiHttpClient
 {
     private readonly IHttpClientCache _httpClientCache;
     private readonly IConfiguration _config;
+    private readonly bool _ownsCachedClient;
 
     private const string _defaultBaseUrl = "http://localhost:8080";
 
-    public SabnzbdOpenApiHttpClient(IHttpClientCache httpClientCache, IConfiguration config)
+    public SabnzbdOpenApiHttpClient(IHttpClientCache httpClientCache, IConfiguration config) : this(httpClientCache, config, true)
+    {
+    }
+
+    internal SabnzbdOpenApiHttpClient(IHttpClientCache httpClientCache, IConfiguration config, bool ownsCachedClient)
     {
         _httpClientCache = httpClientCache;
         _config = config;
+        _ownsCachedClient = ownsCachedClient;
     }
 
     public ValueTask<HttpClient> Get(CancellationToken cancellationToken = default)
@@ -37,11 +42,14 @@ public sealed class SabnzbdOpenApiHttpClient : ISabnzbdOpenApiHttpClient
 
     public void Dispose()
     {
-        _httpClientCache.RemoveSync(nameof(SabnzbdOpenApiHttpClient));
+        if (_ownsCachedClient)
+            _httpClientCache.RemoveSync(nameof(SabnzbdOpenApiHttpClient));
     }
 
     public ValueTask DisposeAsync()
     {
-        return _httpClientCache.Remove(nameof(SabnzbdOpenApiHttpClient));
+        return _ownsCachedClient
+            ? _httpClientCache.Remove(nameof(SabnzbdOpenApiHttpClient))
+            : ValueTask.CompletedTask;
     }
 }

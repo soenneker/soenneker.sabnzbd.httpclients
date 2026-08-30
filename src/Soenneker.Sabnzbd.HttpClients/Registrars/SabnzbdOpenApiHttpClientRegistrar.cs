@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Configuration;
 using Soenneker.Sabnzbd.HttpClients.Abstract;
+using Soenneker.Utils.HttpClientCache.Abstract;
 using Soenneker.Utils.HttpClientCache.Registrar;
 
 namespace Soenneker.Sabnzbd.HttpClients.Registrars;
@@ -18,7 +20,11 @@ public static class SabnzbdOpenApiHttpClientRegistrar
     public static IServiceCollection AddSabnzbdOpenApiHttpClientAsSingleton(this IServiceCollection services)
     {
         services.AddHttpClientCacheAsSingleton()
-                .TryAddSingleton<ISabnzbdOpenApiHttpClient, SabnzbdOpenApiHttpClient>();
+                .TryAddSingleton<ISabnzbdOpenApiHttpClient>(provider =>
+                    new SabnzbdOpenApiHttpClient(
+                        provider.GetRequiredService<IHttpClientCache>(),
+                        provider.GetRequiredService<IConfiguration>(),
+                        true));
 
         return services;
     }
@@ -31,7 +37,11 @@ public static class SabnzbdOpenApiHttpClientRegistrar
     public static IServiceCollection AddSabnzbdOpenApiHttpClientAsScoped(this IServiceCollection services)
     {
         services.AddHttpClientCacheAsSingleton()
-                .TryAddScoped<ISabnzbdOpenApiHttpClient, SabnzbdOpenApiHttpClient>();
+                .TryAddScoped<ISabnzbdOpenApiHttpClient>(provider =>
+                    new SabnzbdOpenApiHttpClient(
+                        provider.GetRequiredService<IHttpClientCache>(),
+                        provider.GetRequiredService<IConfiguration>(),
+                        false));
 
         return services;
     }

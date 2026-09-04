@@ -10,6 +10,7 @@ using Soenneker.Utils.HttpClientCache.Abstract;
 
 namespace Soenneker.Sabnzbd.HttpClients;
 
+/// <inheritdoc cref="ISabnzbdOpenApiHttpClient" />
 public sealed class SabnzbdOpenApiHttpClient : ISabnzbdOpenApiHttpClient
 {
     private readonly IHttpClientCache _httpClientCache;

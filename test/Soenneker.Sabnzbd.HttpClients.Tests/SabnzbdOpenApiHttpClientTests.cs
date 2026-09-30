@@ -18,7 +18,7 @@ public sealed class SabnzbdOpenApiHttpClientTests : HostedUnitTest
     }
 
     [Test]
-    public async Task Get_uses_configured_sabnzbd_base_url(CancellationToken cancellationToken)
+    public async ValueTask Get_uses_configured_sabnzbd_base_url(CancellationToken cancellationToken)
     {
         HttpClient client = await _httpclient.Get(cancellationToken: cancellationToken);
 
